@@ -1,0 +1,21 @@
+{
+  "model": "openrouter/anthropic/claude-sonnet-4-5",
+  "max_tokens": 4000,
+  "brands": [
+    "Houston AI Club",
+    "Amplify Intelligence",
+    "Amplified Exec",
+    "Leon Coe",
+    "AI First Work"
+  ],
+  "output_formats": ["article", "post"],
+  "humanizer_intensity": {
+    "Houston AI Club": "light",
+    "Amplify Intelligence": "medium",
+    "Amplified Exec": "heavy",
+    "Leon Coe": "medium",
+    "AI First Work": "light"
+  },
+  "article_target_length": 800,
+  "post_target_length": 250
+}
