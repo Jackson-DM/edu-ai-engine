@@ -1,5 +1,5 @@
 {
-  "model": "openrouter/anthropic/claude-sonnet-4-5",
+  "model": "anthropic/claude-sonnet-4-5",
   "max_tokens": 4000,
   "brands": [
     "Houston AI Club",
@@ -17,5 +17,10 @@
     "AI First Work": "light"
   },
   "article_target_length": 800,
-  "post_target_length": 250
+  "post_target_length": 250,
+  "humanizer": {
+    "max_tokens_pass_1": 4000,
+    "max_tokens_pass_2": 4500,
+    "temperature": 0.7
+  }
 }
