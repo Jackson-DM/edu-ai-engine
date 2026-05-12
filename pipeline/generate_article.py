@@ -67,12 +67,13 @@ def build_messages(source_text: str, brand_display: str, target_words: int) -> l
     ]
 
 
-def call_openrouter(messages: list, model: str, max_tokens: int, api_key: str) -> str:
+def call_openrouter(messages: list, model: str, max_tokens: int, api_key: str) -> tuple:
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     payload = {"model": model, "messages": messages, "max_tokens": max_tokens}
     r = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=180)
     r.raise_for_status()
-    return r.json()["choices"][0]["message"]["content"]
+    data = r.json()
+    return data["choices"][0]["message"]["content"], data
 
 
 def derive_slug(source_path: Path, content: str) -> str:
@@ -141,7 +142,7 @@ def main() -> int:
 
     print(f"[3/5] calling OpenRouter ({config['model']})")
     try:
-        article = call_openrouter(messages, config["model"], config["max_tokens"], api_key)
+        article, response = call_openrouter(messages, config["model"], config["max_tokens"], api_key)
     except requests.HTTPError as e:
         status = e.response.status_code if e.response is not None else "?"
         body = e.response.text if e.response is not None else ""
@@ -150,6 +151,14 @@ def main() -> int:
     except requests.RequestException as e:
         print(f"error: OpenRouter request failed: {e}", file=sys.stderr)
         return 1
+
+    usage = response.get("usage") or {}
+    prompt_tok = usage.get("prompt_tokens", "?")
+    completion_tok = usage.get("completion_tokens", "?")
+    total_tok = usage.get("total_tokens", "?")
+    cost = usage.get("cost") or response.get("total_cost")
+    cost_str = f", cost=${cost:.6f}" if isinstance(cost, (int, float)) else ""
+    print(f"      usage: prompt={prompt_tok}, completion={completion_tok}, total={total_tok}{cost_str}")
 
     sys.path.insert(0, str(Path(__file__).parent))
     from humanizer import humanize
