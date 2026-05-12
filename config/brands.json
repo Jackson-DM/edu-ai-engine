@@ -1,0 +1,49 @@
+{
+  "brands": {
+    "houston-ai-club": {
+      "display_name": "Houston AI Club",
+      "urls": {
+        "website": "https://www.houstonaiclub.com/",
+        "linkedin": "https://www.linkedin.com/company/houston-ai-club/",
+        "x": null,
+        "cta_primary": null
+      }
+    },
+    "amplify-intelligence": {
+      "display_name": "Amplify Intelligence",
+      "urls": {
+        "website": "https://www.amplifyintelligence.ai/",
+        "linkedin": "https://www.linkedin.com/company/amplifyintelligence-ai/",
+        "x": null,
+        "cta_primary": null
+      }
+    },
+    "amplified-exec": {
+      "display_name": "Amplified Exec",
+      "urls": {
+        "website": "https://www.amplifiedexec.com/",
+        "linkedin": null,
+        "x": null,
+        "cta_primary": null
+      }
+    },
+    "leon-coe": {
+      "display_name": "Leon Coe",
+      "urls": {
+        "website": "https://www.leoncoe.com/",
+        "linkedin": "https://www.linkedin.com/in/leoncoe/",
+        "x": "https://x.com/leonjcoe",
+        "cta_primary": null
+      }
+    },
+    "ai-first-work": {
+      "display_name": "AI First Work",
+      "urls": {
+        "website": null,
+        "linkedin": "https://www.linkedin.com/company/ai-first-work/",
+        "x": null,
+        "cta_primary": null
+      }
+    }
+  }
+}
