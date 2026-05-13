@@ -1,26 +1,42 @@
 {
   "model": "anthropic/claude-sonnet-4-5",
   "max_tokens": 4000,
-  "brands": [
-    "Houston AI Club",
-    "Amplify Intelligence",
-    "Amplified Exec",
-    "Leon Coe",
-    "AI First Work"
-  ],
   "output_formats": ["article", "post"],
-  "humanizer_intensity": {
-    "Houston AI Club": "light",
-    "Amplify Intelligence": "medium",
-    "Amplified Exec": "heavy",
-    "Leon Coe": "medium",
-    "AI First Work": "light"
-  },
-  "article_target_length": 800,
-  "post_target_length": 250,
   "humanizer": {
     "max_tokens_pass_1": 4000,
     "max_tokens_pass_2": 4500,
     "temperature": 0.7
+  },
+  "brands": {
+    "houston-ai-club": {
+      "voice_file": "foundation/voices/houston-ai-club.md",
+      "humanizer_intensity": "light",
+      "article_target_length": 800,
+      "post_target_length": 250
+    },
+    "amplify-intelligence": {
+      "voice_file": "foundation/voices/amplify-intelligence.md",
+      "humanizer_intensity": "medium",
+      "article_target_length": 800,
+      "post_target_length": 250
+    },
+    "amplified-exec": {
+      "voice_file": "foundation/voices/amplified-exec.md",
+      "humanizer_intensity": "heavy",
+      "article_target_length": 800,
+      "post_target_length": 250
+    },
+    "leon-coe": {
+      "voice_file": "foundation/voices/leon-coe.md",
+      "humanizer_intensity": "medium",
+      "article_target_length": 800,
+      "post_target_length": 250
+    },
+    "ai-first-work": {
+      "voice_file": "foundation/voices/ai-first-work.md",
+      "humanizer_intensity": "light",
+      "article_target_length": 800,
+      "post_target_length": 250
+    }
   }
 }

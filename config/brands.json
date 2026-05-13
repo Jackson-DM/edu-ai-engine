@@ -7,7 +7,8 @@
         "linkedin": "https://www.linkedin.com/company/houston-ai-club/",
         "x": null,
         "cta_primary": null
-      }
+      },
+      "content_pillars": []
     },
     "amplify-intelligence": {
       "display_name": "Amplify Intelligence",
@@ -16,7 +17,8 @@
         "linkedin": "https://www.linkedin.com/company/amplifyintelligence-ai/",
         "x": null,
         "cta_primary": null
-      }
+      },
+      "content_pillars": []
     },
     "amplified-exec": {
       "display_name": "Amplified Exec",
@@ -25,7 +27,8 @@
         "linkedin": null,
         "x": null,
         "cta_primary": null
-      }
+      },
+      "content_pillars": []
     },
     "leon-coe": {
       "display_name": "Leon Coe",
@@ -34,7 +37,8 @@
         "linkedin": "https://www.linkedin.com/in/leoncoe/",
         "x": "https://x.com/leonjcoe",
         "cta_primary": null
-      }
+      },
+      "content_pillars": []
     },
     "ai-first-work": {
       "display_name": "AI First Work",
@@ -43,7 +47,8 @@
         "linkedin": "https://www.linkedin.com/company/ai-first-work/",
         "x": null,
         "cta_primary": null
-      }
+      },
+      "content_pillars": []
     }
   }
 }
