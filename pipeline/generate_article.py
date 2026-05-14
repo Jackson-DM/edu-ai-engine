@@ -43,17 +43,45 @@ def extract_brand_voice(brand_slug: str, config: dict) -> str:
     return voice_path.read_text(encoding="utf-8")
 
 
+def build_url_section(brand_slug: str, brands: dict) -> str:
+    brand = brands["brands"][brand_slug]
+    urls = brand["urls"]
+    present = [(k, v) for k, v in urls.items() if v is not None]
+    if not present:
+        return ""
+    lines = [f"{brand['display_name']}'s verified URLs (use verbatim, never modify, never invent):"]
+    for k, v in present:
+        lines.append(f"- {k}: {v}")
+    lines.append("")
+    lines.append(
+        "These are the only verified URLs for this brand. Do not include URLs "
+        "in any other category (Twitter/X, secondary CTAs, etc.) — if a category "
+        "isn't listed above, that brand does not have a public URL for it."
+    )
+    return "\n".join(lines)
+
+
 def build_messages(
-    source_text: str, brand_slug: str, brand_display: str, target_words: int, config: dict
+    source_text: str,
+    brand_slug: str,
+    brand_display: str,
+    target_words: int,
+    config: dict,
+    brands: dict,
 ) -> list:
     voice = extract_brand_voice(brand_slug, config)
+    url_section = build_url_section(brand_slug, brands)
     pillars = (FOUNDATION_DIR / "CONTENT_PILLARS.md").read_text(encoding="utf-8")
     humanizer_rules = (FOUNDATION_DIR / "HUMANIZER_GUIDELINES.md").read_text(encoding="utf-8")
+
+    voice_block = f"BRAND VOICE — follow strictly:\n\n{voice}"
+    if url_section:
+        voice_block = f"{voice_block}\n\n{url_section}"
 
     system = (
         f"You are an expert content writer producing a long-form LinkedIn article "
         f"for the brand '{brand_display}'. Write in markdown. Target length: ~{target_words} words.\n\n"
-        f"BRAND VOICE — follow strictly:\n\n{voice}\n\n"
+        f"{voice_block}\n\n"
         f"CONTENT PILLARS — map the article to the most natural-fit pillar:\n\n{pillars}\n\n"
         f"HUMANIZER RULES — apply during drafting; never use banned phrases:\n\n{humanizer_rules}"
     )
@@ -157,7 +185,7 @@ def main() -> int:
 
     print(f"[2/5] prompt built for brand: {args.brand} ({brand_display})")
     target_words = config["brands"][args.brand]["article_target_length"]
-    messages = build_messages(source_text, args.brand, brand_display, target_words, config)
+    messages = build_messages(source_text, args.brand, brand_display, target_words, config, brands)
 
     print(f"[3/5] calling OpenRouter ({config['model']})")
     try:
