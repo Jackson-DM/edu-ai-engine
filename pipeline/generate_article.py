@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = REPO_ROOT / "config" / "engine_config.json"
+BRANDS_PATH = REPO_ROOT / "config" / "brands.json"
 FOUNDATION_DIR = REPO_ROOT / "foundation"
 OUTPUT_DIR = REPO_ROOT / "output" / "articles"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -29,21 +30,23 @@ def load_config() -> dict:
     return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
-def slug_to_display(config: dict) -> dict:
-    return {slugify(b): b for b in config["brands"]}
+def load_brands() -> dict:
+    return json.loads(BRANDS_PATH.read_text(encoding="utf-8"))
 
 
-def extract_brand_voice(brand: str) -> str:
-    text = (FOUNDATION_DIR / "BRAND_VOICES.md").read_text(encoding="utf-8")
-    pattern = rf"^## {re.escape(brand)}\b.*?(?=^## |\Z)"
-    match = re.search(pattern, text, re.DOTALL | re.MULTILINE)
-    if not match:
-        raise ValueError(f"Brand voice section for '{brand}' not found in BRAND_VOICES.md")
-    return match.group(0).strip()
+def slug_to_display(brands: dict) -> dict:
+    return {slug: brands["brands"][slug]["display_name"] for slug in brands["brands"]}
 
 
-def build_messages(source_text: str, brand_display: str, target_words: int) -> list:
-    voice = extract_brand_voice(brand_display)
+def extract_brand_voice(brand_slug: str, config: dict) -> str:
+    voice_path = REPO_ROOT / config["brands"][brand_slug]["voice_file"]
+    return voice_path.read_text(encoding="utf-8")
+
+
+def build_messages(
+    source_text: str, brand_slug: str, brand_display: str, target_words: int, config: dict
+) -> list:
+    voice = extract_brand_voice(brand_slug, config)
     pillars = (FOUNDATION_DIR / "CONTENT_PILLARS.md").read_text(encoding="utf-8")
     humanizer_rules = (FOUNDATION_DIR / "HUMANIZER_GUIDELINES.md").read_text(encoding="utf-8")
 
@@ -120,7 +123,22 @@ def main() -> int:
         return 1
 
     config = load_config()
-    brand_map = slug_to_display(config)
+    brands = load_brands()
+
+    config_slugs = set(config["brands"].keys())
+    brands_slugs = set(brands["brands"].keys())
+    if config_slugs != brands_slugs:
+        only_in_config = sorted(config_slugs - brands_slugs)
+        only_in_brands = sorted(brands_slugs - config_slugs)
+        print(
+            "error: brand slug mismatch between engine_config.json and brands.json.\n"
+            f"  only in engine_config.json: {only_in_config}\n"
+            f"  only in brands.json:       {only_in_brands}",
+            file=sys.stderr,
+        )
+        return 1
+
+    brand_map = slug_to_display(brands)
     if args.brand not in brand_map:
         print(
             f"error: '{args.brand}' is not a valid brand slug. Choose from: {sorted(brand_map)}",
@@ -138,7 +156,8 @@ def main() -> int:
     source_text = source_path.read_text(encoding="utf-8")
 
     print(f"[2/5] prompt built for brand: {args.brand} ({brand_display})")
-    messages = build_messages(source_text, brand_display, config["article_target_length"])
+    target_words = config["brands"][args.brand]["article_target_length"]
+    messages = build_messages(source_text, args.brand, brand_display, target_words, config)
 
     print(f"[3/5] calling OpenRouter ({config['model']})")
     try:
@@ -164,7 +183,7 @@ def main() -> int:
     from humanizer import humanize
 
     print("[4/5] humanizer pass")
-    intensity = config["humanizer_intensity"][brand_display]
+    intensity = config["brands"][args.brand]["humanizer_intensity"]
     article = humanize(article, intensity=intensity, brand=args.brand)
 
     out_dir = OUTPUT_DIR / args.brand
