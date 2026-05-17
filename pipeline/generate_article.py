@@ -222,16 +222,24 @@ def main() -> int:
         return 1
 
     print(f"[1/5] source loaded: {source_path}")
-    source_text = source_path.read_text(encoding="utf-8")
 
     sys.path.insert(0, str(REPO_ROOT / "scripts"))
-    from ingest_module import normalize
+    from ingest_module import normalize, to_markdown
 
-    source_text, removed, ambiguous = normalize(source_text)
-    if removed:
-        print(f"      ingester stripped {len(removed)} wrapper/instruction sentence(s)")
-    if ambiguous:
-        print(f"      ingester flagged {len(ambiguous)} ambiguous sentence(s) (stripped, review)")
+    if source_path.suffix == ".json":
+        data = json.loads(source_path.read_text(encoding="utf-8"))
+        source_text = "\n\n".join(
+            f"## {n['title']}\n\n{n['content']}" for n in data["notes"]
+        )
+        print(f"      loaded {len(data['notes'])} normalized note(s) from JSON")
+    else:
+        raw = source_path.read_text(encoding="utf-8")
+        if "<notes>" in raw or "<note " in raw:
+            parsed = normalize(raw)
+            source_text = to_markdown(parsed)
+            print(f"      ingester parsed {len(parsed['notes'])} note(s); <critical> preamble stripped")
+        else:
+            source_text = raw
 
     print(f"[2/5] prompt built for brand: {args.brand} ({brand_display})")
     target_words = config["brands"][args.brand]["article_target_length"]

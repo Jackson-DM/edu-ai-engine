@@ -1,86 +1,84 @@
-"""Normalize a raw Anthropic course module export into clean markdown.
+"""Normalize a raw Anthropic course module export into structured notes.
 
-Strips wrapper XML tags and embedded model-instruction sentences from a raw
-export, then applies light readability cleanup (sentence spacing, paragraph
-breaks at clear topic shifts). Idempotent: running on an already-normalized
-file is a no-op.
+Input shape (intro-to-mcp.md and similar):
+    <notes>
+      <critical>...preamble for the downstream model, to be discarded...</critical>
+      <note title="...">...</note>
+      <note title="...">...</note>
+      ...
+    </notes>
+
+Output:
+    <stem>.normalized.json — {"module": str, "source": str, "notes": [{"title": str, "content": str}, ...]}
+    <stem>.normalized.md   — one H2 block per note, for human inspection
 
 CLI:
     python scripts/ingest_module.py --source <path/to/raw.md>
-
-Writes <stem>.normalized.md to the same directory.
 """
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
 
 
-XML_TAG_RE = re.compile(r"<[^>]+>")
-
-INSTRUCTION_PREFIXES = (
-    "below are notes from",
-    "use these notes as a resource",
-    "write your answer as a standalone response",
-)
-
-AMBIGUOUS_EXACT = frozenset({"serve users.", "serve users"})
-
-TOPIC_STARTERS = ("Real examples:",)
+CRITICAL_BLOCK_RE = re.compile(r"<critical>.*?</critical>", re.DOTALL)
+NOTE_BLOCK_RE = re.compile(r'<note\s+title="([^"]+)">(.*?)</note>', re.DOTALL)
+ANY_TAG_RE = re.compile(r"<[^>]+>")
 
 
-def _add_sentence_spaces(text: str) -> str:
-    return re.sub(r"([.!?])([A-Z])", r"\1 \2", text)
-
-
-def _split_sentences(text: str) -> list:
-    text = _add_sentence_spaces(text)
-    parts = re.split(r"(?<=[.!?])\s+", text)
-    return [p.strip() for p in parts if p.strip()]
-
-
-def _classify(sentence: str) -> str:
-    lower = sentence.strip().lower()
-    if lower in AMBIGUOUS_EXACT:
-        return "ambiguous"
-    for prefix in INSTRUCTION_PREFIXES:
-        if lower.startswith(prefix):
-            return "instruction"
-    return "content"
-
-
-def _paragraphize(sentences: list) -> str:
-    paragraphs = []
-    current = []
-    for s in sentences:
-        if current and s.startswith(TOPIC_STARTERS):
-            paragraphs.append(" ".join(current))
-            current = [s]
+def _clean_note_content(content: str) -> str:
+    """Strip stray tags, trim trailing line whitespace, collapse 2+ blank lines to 1."""
+    content = ANY_TAG_RE.sub("", content)
+    lines = [ln.rstrip() for ln in content.splitlines()]
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+    out = []
+    blank = 0
+    for ln in lines:
+        if not ln.strip():
+            blank += 1
+            if blank <= 1:
+                out.append("")
         else:
-            current.append(s)
-    if current:
-        paragraphs.append(" ".join(current))
-    return "\n\n".join(paragraphs)
+            blank = 0
+            out.append(ln)
+    return "\n".join(out)
 
 
-def normalize(text: str) -> tuple:
-    """Return (cleaned_text, removed_instructions, ambiguous_sentences)."""
-    text = XML_TAG_RE.sub("", text)
-    text = re.sub(r"[ \t]+", " ", text)
-    sentences = _split_sentences(text)
+def normalize(text: str) -> dict:
+    """Parse a raw module export into structured notes.
 
-    kept, removed, ambiguous = [], [], []
-    for s in sentences:
-        cat = _classify(s)
-        if cat == "instruction":
-            removed.append(s)
-        elif cat == "ambiguous":
-            ambiguous.append(s)
-        else:
-            kept.append(s)
+    Returns a dict with:
+        notes: list of {"title": str, "content": str}
+        stripped_preamble: str — the contents of <critical>...</critical>, for reporting
+    """
+    critical = CRITICAL_BLOCK_RE.search(text)
+    stripped_preamble = critical.group(0)[len("<critical>"):-len("</critical>")].strip() if critical else ""
+    body = CRITICAL_BLOCK_RE.sub("", text)
 
-    return _paragraphize(kept), removed, ambiguous
+    notes = [
+        {"title": m.group(1).strip(), "content": _clean_note_content(m.group(2))}
+        for m in NOTE_BLOCK_RE.finditer(body)
+    ]
+    return {"notes": notes, "stripped_preamble": stripped_preamble}
+
+
+def to_markdown(parsed: dict) -> str:
+    """Render parsed notes as a flat markdown doc, one H2 per note."""
+    return "\n\n".join(f"## {n['title']}\n\n{n['content']}" for n in parsed["notes"])
+
+
+def to_json(parsed: dict, module: str, source: str) -> str:
+    payload = {
+        "module": module,
+        "source": source,
+        "notes": parsed["notes"],
+    }
+    return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
 def main() -> int:
@@ -94,22 +92,27 @@ def main() -> int:
         return 1
 
     raw = src.read_text(encoding="utf-8")
-    cleaned, removed, ambiguous = normalize(raw)
+    parsed = normalize(raw)
 
-    out_path = src.parent / f"{src.stem}.normalized.md"
-    out_path.write_text(cleaned + "\n", encoding="utf-8")
+    if not parsed["notes"]:
+        print(f"error: no <note title=\"...\"> blocks found in {src}", file=sys.stderr)
+        return 1
 
-    print(f"wrote {out_path}")
-    if removed:
-        print(f"stripped {len(removed)} instructional sentence(s):")
-        for s in removed:
-            print(f"  - {s}")
-    if ambiguous:
-        print(f"flagged {len(ambiguous)} ambiguous sentence(s) (stripped, review):")
-        for s in ambiguous:
-            print(f"  - {s}")
-    if not removed and not ambiguous:
-        print("no instructional or ambiguous content detected (input may already be normalized)")
+    module = src.stem
+    md_path = src.parent / f"{src.stem}.normalized.md"
+    json_path = src.parent / f"{src.stem}.normalized.json"
+
+    md_path.write_text(to_markdown(parsed) + "\n", encoding="utf-8")
+    json_path.write_text(to_json(parsed, module, src.name) + "\n", encoding="utf-8")
+
+    print(f"parsed {len(parsed['notes'])} note(s) from {src.name}")
+    for i, n in enumerate(parsed["notes"], 1):
+        print(f"  {i:2d}. {n['title']}")
+    if parsed["stripped_preamble"]:
+        n_lines = len([ln for ln in parsed["stripped_preamble"].splitlines() if ln.strip()])
+        print(f"stripped <critical> preamble ({n_lines} line(s))")
+    print(f"wrote {md_path}")
+    print(f"wrote {json_path}")
     return 0
 
 
