@@ -8,7 +8,7 @@
         "x": null,
         "cta_primary": null
       },
-      "content_pillars": []
+      "content_pillars": ["build-ship", "community-ecosystem"]
     },
     "amplify-intelligence": {
       "display_name": "Amplify Intelligence",
@@ -18,7 +18,7 @@
         "x": null,
         "cta_primary": null
       },
-      "content_pillars": []
+      "content_pillars": ["implementation-playbooks", "build-ship", "leadership-risk-governance"]
     },
     "amplified-exec": {
       "display_name": "Amplified Exec",
@@ -28,7 +28,7 @@
         "x": null,
         "cta_primary": null
       },
-      "content_pillars": []
+      "content_pillars": ["implementation-playbooks", "leadership-risk-governance"]
     },
     "leon-coe": {
       "display_name": "Leon Coe",
@@ -38,7 +38,7 @@
         "x": "https://x.com/leonjcoe",
         "cta_primary": null
       },
-      "content_pillars": []
+      "content_pillars": ["implementation-playbooks", "ai-first-work-systems", "build-ship", "leadership-risk-governance", "community-ecosystem"]
     },
     "ai-first-work": {
       "display_name": "AI First Work",
@@ -48,7 +48,7 @@
         "x": null,
         "cta_primary": null
       },
-      "content_pillars": []
+      "content_pillars": ["ai-first-work-systems"]
     }
   }
 }

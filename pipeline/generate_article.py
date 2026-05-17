@@ -43,6 +43,45 @@ def extract_brand_voice(brand_slug: str, config: dict) -> str:
     return voice_path.read_text(encoding="utf-8")
 
 
+def filter_pillars(pillars_md: str, allowed_slugs: list) -> str:
+    """Inside ## The Five Pillars, keep only H3 blocks whose slug is in allowed_slugs.
+
+    Slug rule: H3 heading with the 'Pillar N — ' prefix stripped, lowercased,
+    spaces replaced with hyphens. Empty allowed_slugs returns the file unchanged
+    (migration-safe default). All other sections of the file are preserved.
+    """
+    if not allowed_slugs:
+        return pillars_md
+
+    allowed = set(allowed_slugs)
+
+    h2_match = re.search(r"^## The Five Pillars\s*$", pillars_md, re.MULTILINE)
+    if not h2_match:
+        return pillars_md
+
+    section_start = h2_match.start()
+    next_h2 = re.search(r"^## ", pillars_md[h2_match.end():], re.MULTILINE)
+    section_end = h2_match.end() + next_h2.start() if next_h2 else len(pillars_md)
+    section = pillars_md[section_start:section_end]
+
+    h3_matches = list(re.finditer(r"^### Pillar \d+ — (.+)$", section, re.MULTILINE))
+    if not h3_matches:
+        return pillars_md
+
+    prefix = section[:h3_matches[0].start()]
+    kept = []
+    for i, m in enumerate(h3_matches):
+        heading = m.group(1).strip()
+        cleaned = re.sub(r"[&,.]", "", heading).lower()
+        slug = re.sub(r"-+", "-", cleaned.replace(" ", "-")).strip("-")
+        block_end = h3_matches[i + 1].start() if i + 1 < len(h3_matches) else len(section)
+        if slug in allowed:
+            kept.append(section[m.start():block_end])
+
+    filtered_section = prefix + "".join(kept)
+    return pillars_md[:section_start] + filtered_section + pillars_md[section_end:]
+
+
 def build_url_section(brand_slug: str, brands: dict) -> str:
     brand = brands["brands"][brand_slug]
     urls = brand["urls"]
@@ -71,7 +110,9 @@ def build_messages(
 ) -> list:
     voice = extract_brand_voice(brand_slug, config)
     url_section = build_url_section(brand_slug, brands)
-    pillars = (FOUNDATION_DIR / "CONTENT_PILLARS.md").read_text(encoding="utf-8")
+    pillars_raw = (FOUNDATION_DIR / "CONTENT_PILLARS.md").read_text(encoding="utf-8")
+    brand_pillar_slugs = brands["brands"][brand_slug].get("content_pillars", [])
+    pillars = filter_pillars(pillars_raw, brand_pillar_slugs)
     humanizer_rules = (FOUNDATION_DIR / "HUMANIZER_GUIDELINES.md").read_text(encoding="utf-8")
 
     voice_block = f"BRAND VOICE — follow strictly:\n\n{voice}"
