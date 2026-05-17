@@ -224,6 +224,15 @@ def main() -> int:
     print(f"[1/5] source loaded: {source_path}")
     source_text = source_path.read_text(encoding="utf-8")
 
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    from ingest_module import normalize
+
+    source_text, removed, ambiguous = normalize(source_text)
+    if removed:
+        print(f"      ingester stripped {len(removed)} wrapper/instruction sentence(s)")
+    if ambiguous:
+        print(f"      ingester flagged {len(ambiguous)} ambiguous sentence(s) (stripped, review)")
+
     print(f"[2/5] prompt built for brand: {args.brand} ({brand_display})")
     target_words = config["brands"][args.brand]["article_target_length"]
     messages = build_messages(source_text, args.brand, brand_display, target_words, config, brands)
