@@ -8,7 +8,10 @@
         "x": null,
         "cta_primary": null
       },
-      "content_pillars": ["build-ship", "community-ecosystem"]
+      "content_pillars": {
+        "primary": ["community-ecosystem"],
+        "secondary": ["build-ship"]
+      }
     },
     "amplify-intelligence": {
       "display_name": "Amplify Intelligence",
@@ -18,7 +21,10 @@
         "x": null,
         "cta_primary": null
       },
-      "content_pillars": ["implementation-playbooks", "build-ship", "leadership-risk-governance"]
+      "content_pillars": {
+        "primary": ["implementation-playbooks"],
+        "secondary": ["build-ship", "leadership-risk-governance"]
+      }
     },
     "amplified-exec": {
       "display_name": "Amplified Exec",
@@ -28,7 +34,10 @@
         "x": null,
         "cta_primary": null
       },
-      "content_pillars": ["implementation-playbooks", "leadership-risk-governance"]
+      "content_pillars": {
+        "primary": ["leadership-risk-governance"],
+        "secondary": ["implementation-playbooks"]
+      }
     },
     "leon-coe": {
       "display_name": "Leon Coe",
@@ -38,7 +47,10 @@
         "x": "https://x.com/leonjcoe",
         "cta_primary": null
       },
-      "content_pillars": ["implementation-playbooks", "ai-first-work-systems", "build-ship", "leadership-risk-governance", "community-ecosystem"]
+      "content_pillars": {
+        "primary": [],
+        "secondary": ["implementation-playbooks", "ai-first-work-systems", "build-ship", "leadership-risk-governance", "community-ecosystem"]
+      }
     },
     "ai-first-work": {
       "display_name": "AI First Work",
@@ -48,7 +60,10 @@
         "x": null,
         "cta_primary": null
       },
-      "content_pillars": ["ai-first-work-systems"]
+      "content_pillars": {
+        "primary": ["ai-first-work-systems"],
+        "secondary": []
+      }
     }
   }
 }

@@ -111,7 +111,8 @@ def build_messages(
     voice = extract_brand_voice(brand_slug, config)
     url_section = build_url_section(brand_slug, brands)
     pillars_raw = (FOUNDATION_DIR / "CONTENT_PILLARS.md").read_text(encoding="utf-8")
-    brand_pillar_slugs = brands["brands"][brand_slug].get("content_pillars", [])
+    cp = brands["brands"][brand_slug].get("content_pillars", {})
+    brand_pillar_slugs = list(cp.get("primary", [])) + list(cp.get("secondary", []))
     pillars = filter_pillars(pillars_raw, brand_pillar_slugs)
     humanizer_rules = (FOUNDATION_DIR / "HUMANIZER_GUIDELINES.md").read_text(encoding="utf-8")
 
