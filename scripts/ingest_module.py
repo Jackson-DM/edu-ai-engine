@@ -24,8 +24,13 @@ from pathlib import Path
 
 
 CRITICAL_BLOCK_RE = re.compile(r"<critical>.*?</critical>", re.DOTALL)
-NOTE_BLOCK_RE = re.compile(r'<note\s+title="([^"]+)">(.*?)</note>', re.DOTALL)
+NOTE_BLOCK_RE = re.compile(r"<note\s+([^>]*?)>(.*?)</note>", re.DOTALL)
+NOTE_ATTR_RE = re.compile(r'(\w+)="([^"]*)"')
 ANY_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _parse_pillars(value: str) -> list:
+    return [p.strip() for p in value.split(",") if p.strip()]
 
 
 def _clean_note_content(content: str) -> str:
@@ -60,10 +65,18 @@ def normalize(text: str) -> dict:
     stripped_preamble = critical.group(0)[len("<critical>"):-len("</critical>")].strip() if critical else ""
     body = CRITICAL_BLOCK_RE.sub("", text)
 
-    notes = [
-        {"title": m.group(1).strip(), "content": _clean_note_content(m.group(2))}
-        for m in NOTE_BLOCK_RE.finditer(body)
-    ]
+    notes = []
+    for m in NOTE_BLOCK_RE.finditer(body):
+        attrs = dict(NOTE_ATTR_RE.findall(m.group(1)))
+        title = attrs.get("title", "").strip()
+        if not title:
+            continue
+        pillars = _parse_pillars(attrs["pillars"]) if "pillars" in attrs else []
+        notes.append({
+            "title": title,
+            "pillars": pillars,
+            "content": _clean_note_content(m.group(2)),
+        })
     return {"notes": notes, "stripped_preamble": stripped_preamble}
 
 
