@@ -11,7 +11,8 @@
       "content_pillars": {
         "primary": ["community-ecosystem"],
         "secondary": ["build-ship"]
-      }
+      },
+      "voice_summary": "Practitioner-focused, technical, implementation-first. Audience is AI builders and engineers actively shipping code."
     },
     "amplify-intelligence": {
       "display_name": "Amplify Intelligence",
@@ -24,7 +25,8 @@
       "content_pillars": {
         "primary": ["implementation-playbooks"],
         "secondary": ["build-ship", "leadership-risk-governance"]
-      }
+      },
+      "voice_summary": "Strategic and consultative. Audience is technical leaders bridging AI capability and organizational adoption."
     },
     "amplified-exec": {
       "display_name": "Amplified Exec",
@@ -37,7 +39,8 @@
       "content_pillars": {
         "primary": ["leadership-risk-governance"],
         "secondary": ["implementation-playbooks"]
-      }
+      },
+      "voice_summary": "Executive-framed and outcomes-oriented. Audience is senior leaders making AI investment and governance decisions."
     },
     "leon-coe": {
       "display_name": "Leon Coe",
@@ -50,7 +53,8 @@
       "content_pillars": {
         "primary": [],
         "secondary": ["implementation-playbooks", "ai-first-work-systems", "build-ship", "leadership-risk-governance", "community-ecosystem"]
-      }
+      },
+      "voice_summary": "Personal, founder-voice, candid. Audience follows Leon directly across all brand topics."
     },
     "ai-first-work": {
       "display_name": "AI First Work",
@@ -63,7 +67,8 @@
       "content_pillars": {
         "primary": ["ai-first-work-systems"],
         "secondary": []
-      }
+      },
+      "voice_summary": "Workflow and productivity-oriented. Audience is knowledge workers and team leads adopting AI in daily work."
     }
   }
 }
