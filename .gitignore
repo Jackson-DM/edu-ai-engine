@@ -3,4 +3,5 @@ __pycache__/
 *.pyc
 .venv/
 output/**/*.md
+output/plan_cache/
 .baseline/
