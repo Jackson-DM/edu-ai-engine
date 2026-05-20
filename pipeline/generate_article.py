@@ -270,8 +270,24 @@ def main() -> int:
     from humanizer import humanize
 
     print("[4/5] humanizer pass")
-    intensity = config["brands"][args.brand]["humanizer_intensity"]
-    article = humanize(article, intensity=intensity, brand=args.brand)
+    brand_config = brands["brands"][args.brand]
+    intensity = brand_config["humanizer_intensity"]
+    # generate_article predates the step-7 planner; supply a minimal plan so the
+    # humanizer signature is satisfied. Step 9's batch runner will pass a real plan.
+    plan = {
+        "piece_type": "explainer",
+        "target_length": 300,
+        "angle": "",
+        "source_notes": [],
+    }
+    voice_summary = brand_config["voice_summary"]
+    article = humanize(
+        article,
+        intensity=intensity,
+        brand=args.brand,
+        plan=plan,
+        voice_summary=voice_summary,
+    )
 
     out_dir = OUTPUT_DIR / args.brand
     out_dir.mkdir(parents=True, exist_ok=True)

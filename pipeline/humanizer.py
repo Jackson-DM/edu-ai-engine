@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = REPO_ROOT / "config" / "engine_config.json"
 GUIDELINES_PATH = REPO_ROOT / "foundation" / "HUMANIZER_GUIDELINES.md"
+VOICES_DIR = REPO_ROOT / "foundation" / "voices"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 VALID_INTENSITIES = ("light", "medium", "heavy")
@@ -43,6 +44,7 @@ INTENSITY_DIRECTIVES = {
 
 _guidelines_cache = ""
 _config_cache: dict = {}
+_voice_cache: dict = {}
 
 
 def _load_guidelines() -> str:
@@ -51,6 +53,27 @@ def _load_guidelines() -> str:
     if not _guidelines_cache:
         _guidelines_cache = GUIDELINES_PATH.read_text(encoding="utf-8")
     return _guidelines_cache
+
+
+def _load_brand_voice(brand_slug: str) -> str:
+    """Load and cache the brand voice file (foundation/voices/<brand_slug>.md)."""
+    if brand_slug not in _voice_cache:
+        path = VOICES_DIR / f"{brand_slug}.md"
+        _voice_cache[brand_slug] = path.read_text(encoding="utf-8")
+    return _voice_cache[brand_slug]
+
+
+def _format_piece_context(plan: dict) -> str:
+    """Render the piece-context block injected at the top of humanizer prompts."""
+    source_notes = plan.get("source_notes") or []
+    angle = plan.get("angle") or ""
+    return (
+        "Piece context:\n"
+        f"- Type: {plan.get('piece_type', '')}\n"
+        f"- Target length: {plan.get('target_length', '')} words\n"
+        f"- Angle: {angle}\n"
+        f"- Source notes: {', '.join(source_notes) if source_notes else '(none)'}"
+    )
 
 
 def _load_config() -> dict:
@@ -108,17 +131,28 @@ def _parse_pass2_json(raw: str) -> dict:
     return json.loads(text)
 
 
-def _draft_messages(text: str, intensity: str, brand: str, guidelines: str) -> list:
-    """Build pass-1 messages: full guidelines + brand context + intensity directive."""
+def _draft_messages(
+    text: str,
+    intensity: str,
+    brand: str,
+    guidelines: str,
+    brand_voice: str,
+    voice_summary: str,
+    plan: dict,
+) -> list:
+    """Build pass-1 messages: piece context + intensity directive + guidelines + brand voice."""
     system = (
         "You are a writing editor. Apply the following guidelines to humanize "
         "the text. Preserve meaning and brand voice. Return only the rewritten "
         "text, no preamble."
     )
     user = (
-        f"This text is for the {brand} brand on LinkedIn.\n\n"
+        f"This text is for the {brand} brand on LinkedIn.\n"
+        f"Voice summary: {voice_summary}\n\n"
+        f"{_format_piece_context(plan)}\n\n"
         f"Intensity: {intensity}. {INTENSITY_DIRECTIVES[intensity]}\n\n"
         f"--- HUMANIZER GUIDELINES ---\n\n{guidelines}\n\n"
+        f"--- BRAND VOICE ({brand}) ---\n\n{brand_voice}\n\n"
         f"--- TEXT TO HUMANIZE ---\n\n{text}"
     )
     return [
@@ -127,7 +161,15 @@ def _draft_messages(text: str, intensity: str, brand: str, guidelines: str) -> l
     ]
 
 
-def _audit_messages(draft: str, intensity: str, brand: str, guidelines: str) -> list:
+def _audit_messages(
+    draft: str,
+    intensity: str,
+    brand: str,
+    guidelines: str,
+    brand_voice: str,
+    voice_summary: str,
+    plan: dict,
+) -> list:
     """Build pass-2 messages: audit + final rewrite returned as JSON."""
     system = (
         "First, identify what still sounds AI-generated about the draft below "
@@ -135,8 +177,12 @@ def _audit_messages(draft: str, intensity: str, brand: str, guidelines: str) -> 
         'specific issues. Return JSON: {"audit": [...], "final": "..."}.'
     )
     user = (
-        f"This text is for the {brand} brand on LinkedIn. Intensity: {intensity}.\n\n"
+        f"This text is for the {brand} brand on LinkedIn.\n"
+        f"Voice summary: {voice_summary}\n\n"
+        f"{_format_piece_context(plan)}\n\n"
+        f"Intensity: {intensity}.\n\n"
         f"--- HUMANIZER GUIDELINES (reference) ---\n\n{guidelines}\n\n"
+        f"--- BRAND VOICE ({brand}) ---\n\n{brand_voice}\n\n"
         f"--- DRAFT TO AUDIT AND FINALIZE ---\n\n{draft}"
     )
     return [
@@ -145,13 +191,20 @@ def _audit_messages(draft: str, intensity: str, brand: str, guidelines: str) -> 
     ]
 
 
-def humanize(text: str, intensity: str, brand: str) -> str:
+def humanize(text: str, intensity: str, brand: str, plan: dict, voice_summary: str) -> str:
     """Run two-pass humanizer on generated content. Always returns humanized text or raises.
 
     Args:
         text: Article or post content to humanize.
-        intensity: One of "light", "medium", "heavy" (matches engine_config.json).
-        brand: Brand slug (e.g., "ai-first-work"), used as prompt context only.
+        intensity: One of "light", "medium", "heavy" (matches brands.json).
+            Overridden to "light" automatically if plan["piece_type"] == "quick_take".
+        brand: Brand slug (e.g., "ai-first-work"). Used for prompt context AND
+            to look up the brand voice file under foundation/voices/<brand>.md.
+        plan: Piece-plan dict from step 7 (plan_pieces.py). Used for piece_type
+            override and to inject piece context (type, target_length, angle,
+            source_notes) into the humanizer prompts.
+        voice_summary: Short brand voice description from brands.json, injected
+            into the prompt header.
 
     Returns:
         Final humanized text. On pass-2 failure, returns the pass-1 draft
@@ -162,12 +215,18 @@ def humanize(text: str, intensity: str, brand: str) -> str:
         RuntimeError: if OPENROUTER_API_KEY is unset.
         requests.RequestException: if the pass-1 API call fails.
     """
+    # Piece-type intensity override — applied before validation.
+    if plan.get("piece_type") == "quick_take" and intensity != "light":
+        print(f"[humanizer] piece_type=quick_take, overriding intensity {intensity!r} -> light")
+        intensity = "light"
+
     if intensity not in VALID_INTENSITIES:
         raise ValueError(
             f"intensity must be one of {VALID_INTENSITIES}, got {intensity!r}"
         )
 
     guidelines = _load_guidelines()
+    brand_voice = _load_brand_voice(brand)
     config = _load_config()
     humanizer_cfg = config["humanizer"]
     model = config["model"]
@@ -178,7 +237,7 @@ def humanize(text: str, intensity: str, brand: str) -> str:
         print("[humanizer] short input, single-pass mode.")
 
     pass1_response = _call_openrouter(
-        _draft_messages(text, intensity, brand, guidelines),
+        _draft_messages(text, intensity, brand, guidelines, brand_voice, voice_summary, plan),
         model=model,
         max_tokens=humanizer_cfg["max_tokens_pass_1"],
         temperature=humanizer_cfg["temperature"],
@@ -192,7 +251,7 @@ def humanize(text: str, intensity: str, brand: str) -> str:
 
     try:
         pass2_response = _call_openrouter(
-            _audit_messages(draft, intensity, brand, guidelines),
+            _audit_messages(draft, intensity, brand, guidelines, brand_voice, voice_summary, plan),
             model=model,
             max_tokens=humanizer_cfg["max_tokens_pass_2"],
             temperature=humanizer_cfg["temperature"],

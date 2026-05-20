@@ -12,7 +12,8 @@
         "primary": ["community-ecosystem"],
         "secondary": ["build-ship"]
       },
-      "voice_summary": "Practitioner-focused, technical, implementation-first. Audience is AI builders and engineers actively shipping code."
+      "voice_summary": "Practitioner-focused, technical, implementation-first. Audience is AI builders and engineers actively shipping code.",
+      "humanizer_intensity": "light"
     },
     "amplify-intelligence": {
       "display_name": "Amplify Intelligence",
@@ -26,7 +27,8 @@
         "primary": ["implementation-playbooks"],
         "secondary": ["build-ship", "leadership-risk-governance"]
       },
-      "voice_summary": "Strategic and consultative. Audience is technical leaders bridging AI capability and organizational adoption."
+      "voice_summary": "Strategic and consultative. Audience is technical leaders bridging AI capability and organizational adoption.",
+      "humanizer_intensity": "medium"
     },
     "amplified-exec": {
       "display_name": "Amplified Exec",
@@ -40,7 +42,8 @@
         "primary": ["leadership-risk-governance"],
         "secondary": ["implementation-playbooks"]
       },
-      "voice_summary": "Executive-framed and outcomes-oriented. Audience is senior leaders making AI investment and governance decisions."
+      "voice_summary": "Executive-framed and outcomes-oriented. Audience is senior leaders making AI investment and governance decisions.",
+      "humanizer_intensity": "heavy"
     },
     "leon-coe": {
       "display_name": "Leon Coe",
@@ -54,7 +57,8 @@
         "primary": [],
         "secondary": ["implementation-playbooks", "ai-first-work-systems", "build-ship", "leadership-risk-governance", "community-ecosystem"]
       },
-      "voice_summary": "Personal, founder-voice, candid. Audience follows Leon directly across all brand topics."
+      "voice_summary": "Personal, founder-voice, candid. Audience follows Leon directly across all brand topics.",
+      "humanizer_intensity": "medium"
     },
     "ai-first-work": {
       "display_name": "AI First Work",
@@ -68,7 +72,8 @@
         "primary": ["ai-first-work-systems"],
         "secondary": []
       },
-      "voice_summary": "Workflow and productivity-oriented. Audience is knowledge workers and team leads adopting AI in daily work."
+      "voice_summary": "Workflow and productivity-oriented. Audience is knowledge workers and team leads adopting AI in daily work.",
+      "humanizer_intensity": "light"
     }
   }
 }
